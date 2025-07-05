@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval' 'unsafe-inline' https://esm.sh https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com;">
+    <title>Fluent Crypto Tapper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      }
+      
+      /* Анімації */
+      .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .animate-bounce { animation: bounce 1s infinite; }
+      .animate-ping { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
+      .animate-spin { animation: spin 1s linear infinite; }
+      .animate-bounce-in { animation: bounceIn 0.6s ease-out; }
+      .animate-scale-120 { animation: scale120 0.2s ease-out; }
+      
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+      @keyframes bounce { 0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); } 50% { transform: none; animation-timing-function: cubic-bezier(0, 0, 0.2, 1); } }
+      @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes bounceIn { 
+        0% { transform: scale(0.3); opacity: 0; }
+        50% { transform: scale(1.05); }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes scale120 { 
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+      }
+      
+      /* Градієнтні ефекти */
+      .gradient-text { background: linear-gradient(45deg, #06b6d4, #8b5cf6, #ec4899); background-size: 200% 200%; animation: gradientShift 3s ease infinite; }
+      @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+      
+      /* Ефект світіння */
+      .glow { box-shadow: 0 0 20px rgba(6, 182, 212, 0.5); }
+      .glow:hover { box-shadow: 0 0 30px rgba(6, 182, 212, 0.8); }
+      
+      /* Кастомні класи для кращого вигляду */
+      .glass-effect { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+      .neon-border { border: 1px solid rgba(6, 182, 212, 0.3); box-shadow: 0 0 10px rgba(6, 182, 212, 0.2); }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div id="root"></div>
+
+    <script type="module">
+      import React, { useState, useEffect, useCallback, useRef } from 'https://esm.sh/react@18.2.0';
+      import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+
+      // API функції для роботи з сервером
+      const API_BASE = 'http://localhost:3001/api';
+
+      const api = {
+        async getUser() {
+          const response = await fetch(`${API_BASE}/user/default`);
+          return response.json();
+        },
+        
+        async saveUser(data) {
+          const response = await fetch(`${API_BASE}/user/default/save`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          return response.json();
+        },
+        
+        async click() {
+          const response = await fetch(`${API_BASE}/user/default/click`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          return response.json();
+        }
+      };
+
+      // Основний компонент гри
+      const FluentCryptoTapper = () => {
+        // Основний стан гри з сервера
+        const [gameState, setGameState] = useState(null);
+        const [loading, setLoading] = useState(true);
+        
+        // Локальний стан для UI
+        const [currentTab, setCurrentTab] = useState("game");
+        const [lastTapTime, setLastTapTime] = useState(0);
+        const [notifications, setNotifications] = useState([]);
+        const [floatingCoins, setFloatingCoins] = useState([]);
+        const [tapEffect, setTapEffect] = useState(false);
+        const [particles, setParticles] = useState([]);
+        const [shockwave, setShockwave] = useState(false);
+        const tapButtonRef = useRef(null);
+
+        // Завантаження даних з сервера при старті
+        useEffect(() => {
+          const loadGameState = async () => {
+            try {
+              const data = await api.getUser();
+              setGameState(data);
+            } catch (error) {
+              console.error('Error loading game state:', error);
+              // Fallback до початкових значень
+              setGameState({
+                coins: 0,
+                energy: 100,
+                maxEnergy: 100,
+                level: 1,
+                experience: 0,
+                tapPower: 1,
+                passiveIncome: 0,
+                totalTaps: 0,
+                lastOfflineTime: Date.now(),
+                upgrades: {
+                  quantumFinger: 0,
+                  energyCore: 0,
+                  miningRig: 0,
+                  fluentBooster: 0
+                },
+                achievements: {
+                  firstTap: false,
+                  hundred: false,
+                  thousand: false,
+                  firstUpgrade: false,
+                  energyMaster: false,
+                  passive: false,
+                  storyComplete: false,
+                  comboMaster: false,
+                  speedTapper: false
+                },
+                completedMissions: [],
+                storyChapter: 0,
+                dailyRewardDay: 0,
+                lastDailyReward: 0,
+                comboMultiplier: 1
+              });
+            } finally {
+              setLoading(false);
+            }
+          };
+          
+          loadGameState();
+        }, []);
+
+        // Автозбереження кожні 30 секунд
+        useEffect(() => {
+          if (!gameState) return;
+          
+          const interval = setInterval(async () => {
+            try {
+              await api.saveUser(gameState);
+            } catch (error) {
+              console.error('Error auto-saving:', error);
+            }
+          }, 30000);
+          
+          return () => clearInterval(interval);
+        }, [gameState]);
+
+        // Оновлення даних на сервері
+        const updateGameState = async (updates) => {
+          if (!gameState) return;
+          
+          const newState = { ...gameState, ...updates };
+          setGameState(newState);
+          
+          try {
+            await api.saveUser(updates);
+          } catch (error) {
+            console.error('Error updating game state:', error);
+          }
+        };
+
+        // Функція для додавання уведомлень
+        const addNotification = (message, type = "info") => {
+          const id = Date.now();
+          setNotifications(prev => [...prev, { id, message, type }]);
+          setTimeout(() => {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+          }, 3000);
+        };
+
+        // Дані місій
+        const missionData = [
+          {
+            id: 1,
+            title: "First Steps",
+            description: "Make your first tap",
+            requirement: { type: "taps", amount: 1 },
+            reward: { coins: 10, experience: 20 }
+          },
+          {
+            id: 2,
+            title: "Getting Started",
+            description: "Reach 100 coins",
+            requirement: { type: "coins", amount: 100 },
+            reward: { coins: 50, experience: 50 }
+          },
+          {
+            id: 3,
+            title: "Power Up",
+            description: "Buy your first upgrade",
+            requirement: { type: "upgrades", amount: 1 },
+            reward: { coins: 100, experience: 100 }
+          },
+          {
+            id: 4,
+            title: "Level Up",
+            description: "Reach level 5",
+            requirement: { type: "level", amount: 5 },
+            reward: { coins: 200, experience: 200 }
+          },
+          {
+            id: 5,
+            title: "Combo Master",
+            description: "Achieve a 3x combo",
+            requirement: { type: "combo", amount: 3 },
+            reward: { coins: 300, experience: 300 }
+          }
+        ];
+
+        // Дані досягнень
+        const achievementData = {
+          firstTap: { name: "First Strike", description: "Make your first tap", icon: "⚡" },
+          hundred: { name: "Century", description: "Reach 100 coins", icon: "💰" },
+          thousand: { name: "Thousandaire", description: "Reach 1,000 coins", icon: "💎" },
+          firstUpgrade: { name: "Upgrader", description: "Buy your first upgrade", icon: "🔧" },
+          energyMaster: { name: "Energy Master", description: "Reach max energy capacity", icon: "⚡" },
+          passive: { name: "Passive Income", description: "Earn passive income", icon: "🏭" },
+          comboMaster: { name: "Combo Master", description: "Achieve 5x combo", icon: "🔥" },
+          speedTapper: { name: "Speed Tapper", description: "Tap 10 times in 10 seconds", icon: "⚡" }
+        };
+
+        // Дані покращень
+        const upgradeData = {
+          quantumFinger: {
+            name: 'Quantum Processor',
+            description: 'Advanced mining algorithm optimization',
+            baseCost: 50,
+            multiplier: 1.5,
+            effect: (level) => level + 1,
+            category: 'Performance'
+          },
+          energyCore: {
+            name: 'Energy Matrix',
+            description: 'Exponential power core expansion',
+            baseCost: 100,
+            multiplier: 2,
+            effect: (level) => 100 + (level * 50),
+            category: 'Capacity'
+          },
+          miningRig: {
+            name: 'Mining Infrastructure',
+            description: 'Autonomous revenue generation',
+            baseCost: 200,
+            multiplier: 2.5,
+            effect: (level) => level * 2,
+            category: 'Passive'
+          },
+          fluentBooster: {
+            name: 'Neural Accelerator',
+            description: 'AI-powered efficiency multiplier',
+            baseCost: 500,
+            multiplier: 3,
+            effect: (level) => level * 0.1,
+            category: 'Boost'
+          }
+        };
+
+        // Обчислення вартості покращень
+        const getUpgradeCost = (upgradeType) => {
+          const data = upgradeData[upgradeType];
+          const currentLevel = gameState?.upgrades?.[upgradeType] || 0;
+          return Math.floor(data.baseCost * Math.pow(data.multiplier, currentLevel));
+        };
+
+        // Функції для місій
+        const getMissionProgress = (mission) => {
+          if (!gameState) return 0;
+          
+          switch (mission.requirement.type) {
+            case "taps":
+              return gameState.totalTaps || 0;
+            case "coins":
+              return gameState.coins;
+            case "upgrades":
+              return Object.values(gameState.upgrades || {}).reduce((sum, level) => sum + level, 0);
+            case "level":
+              return gameState.level;
+            case "combo":
+              return Math.floor(gameState.comboMultiplier || 1);
+            default:
+              return 0;
+          }
+        };
+
+        const claimMission = async (missionId) => {
+          if (!gameState) return;
+          
+          const mission = missionData.find(m => m.id === missionId);
+          if (!mission) return;
+          
+          const progress = getMissionProgress(mission);
+          if (progress < mission.requirement.amount) return;
+          
+          const completedMissions = [...(gameState.completedMissions || []), missionId];
+          
+          setGameState(prev => ({
+            ...prev,
+            coins: prev.coins + mission.reward.coins,
+            experience: prev.experience + mission.reward.experience,
+            completedMissions
+          }));
+          
+          addNotification(`Mission completed: ${mission.title}!`, "success");
+        };
+
+        // Покупка апгрейду
+        const buyUpgrade = async (upgradeType) => {
+          if (!gameState) return;
+          
+          const cost = getUpgradeCost(upgradeType);
+          if (gameState.coins >= cost) {
+            const newUpgrades = { ...gameState.upgrades, [upgradeType]: gameState.upgrades[upgradeType] + 1 };
+            const updates = {
+              coins: gameState.coins - cost,
+              upgrades: newUpgrades
+            };
+
+            if (upgradeType === "quantumFinger") {
+              updates.tapPower = gameState.tapPower + 1;
+            } else if (upgradeType === "energyCore") {
+              updates.maxEnergy = upgradeData.energyCore.effect(newUpgrades.energyCore);
+            } else if (upgradeType === "miningRig") {
+              updates.passiveIncome = upgradeData.miningRig.effect(newUpgrades.miningRig);
+            } else if (upgradeType === "fluentBooster") {
+              updates.tapPower = gameState.tapPower + upgradeData.fluentBooster.effect(newUpgrades.fluentBooster);
+            }
+
+            updateGameState(updates);
+            addNotification(`Upgraded ${upgradeData[upgradeType].name}!`, "success");
+
+            if (!gameState.achievements.firstUpgrade) {
+              updateGameState({
+                achievements: { ...gameState.achievements, firstUpgrade: true }
+              });
+              addNotification("Achievement: First Upgrade!", "achievement");
+            }
+          }
+        };
+
+        // Обробка кліку
+        const handleTap = useCallback(async (e) => {
+          if (!gameState || gameState.energy <= 0) return;
+
+          const now = Date.now();
+          const timeSinceLastTap = now - lastTapTime;
+          
+          if (timeSinceLastTap < 1000) {
+            setGameState(prev => ({ ...prev, comboMultiplier: Math.min((prev.comboMultiplier || 1) + 0.5, 5) }));
+          } else {
+            setGameState(prev => ({ ...prev, comboMultiplier: 1 }));
+          }
+          setLastTapTime(now);
+
+          // Ефекти тапання
+          setTapEffect(true);
+          setShockwave(true);
+          setTimeout(() => setTapEffect(false), 200);
+          setTimeout(() => setShockwave(false), 600);
+
+          const earnedCoins = Math.floor(gameState.tapPower * (gameState.comboMultiplier || 1));
+          
+          // Оновлюємо стан через API
+          setGameState(prev => ({
+            ...prev,
+            coins: prev.coins + earnedCoins,
+            experience: prev.experience + earnedCoins,
+            energy: prev.energy - 1,
+            totalTaps: (prev.totalTaps || 0) + 1
+          }));
+
+          if (!gameState.achievements.firstTap) {
+            updateGameState({
+              achievements: { ...gameState.achievements, firstTap: true }
+            });
+            addNotification("Achievement: First Strike!", "achievement");
+          }
+        }, [gameState, lastTapTime]);
+
+        // Розрахунки
+        const expForNextLevel = gameState?.level ? gameState.level * 100 : 100;
+        const expProgress = gameState?.experience ? (gameState.experience / expForNextLevel) * 100 : 0;
+
+        // Відновлення енергії
+        useEffect(() => {
+          if (!gameState) return;
+          
+          const interval = setInterval(() => {
+            setGameState(prev => {
+              if (!prev || prev.energy >= prev.maxEnergy) return prev;
+              return { ...prev, energy: Math.min(prev.energy + 1, prev.maxEnergy) };
+            });
+          }, 1000);
+          return () => clearInterval(interval);
+        }, [gameState?.energy, gameState?.maxEnergy]);
+
+        // Пасивний дохід
+        useEffect(() => {
+          if (!gameState || gameState.passiveIncome <= 0) return;
+          
+          const interval = setInterval(() => {
+            setGameState(prev => {
+              if (!prev) return prev;
+              return { ...prev, coins: prev.coins + prev.passiveIncome };
+            });
+          }, 1000);
+          return () => clearInterval(interval);
+        }, [gameState?.passiveIncome]);
+
+        // Система рівнів
+        useEffect(() => {
+          if (!gameState || gameState.experience < expForNextLevel) return;
+          
+          const newLevel = gameState.level + 1;
+          const bonusCoins = gameState.level * 50;
+          
+          setGameState(prev => ({
+            ...prev,
+            level: newLevel,
+            experience: 0,
+            coins: prev.coins + bonusCoins
+          }));
+          
+          addNotification(`Level up! Reached Level ${newLevel}`, "success");
+        }, [gameState?.experience, expForNextLevel]);
+
+        // Комбо система
+        useEffect(() => {
+          const timer = setTimeout(() => {
+            if (gameState?.comboMultiplier && gameState.comboMultiplier > 1) {
+              setGameState(prev => ({ ...prev, comboMultiplier: 1 }));
+            }
+          }, 3000);
+          return () => clearTimeout(timer);
+        }, [lastTapTime]);
+
+        // Перевірка досягнень
+        useEffect(() => {
+          if (!gameState) return;
+          
+          const newAchievements = { ...gameState.achievements };
+          let hasNewAchievement = false;
+          
+          // Перевірка досягнень
+          if (gameState.coins >= 100 && !newAchievements.hundred) {
+            newAchievements.hundred = true;
+            hasNewAchievement = true;
+            addNotification("Achievement: Century!", "achievement");
+          }
+          
+          if (gameState.coins >= 1000 && !newAchievements.thousand) {
+            newAchievements.thousand = true;
+            hasNewAchievement = true;
+            addNotification("Achievement: Thousandaire!", "achievement");
+          }
+          
+          if (gameState.comboMultiplier >= 5 && !newAchievements.comboMaster) {
+            newAchievements.comboMaster = true;
+            hasNewAchievement = true;
+            addNotification("Achievement: Combo Master!", "achievement");
+          }
+          
+          if (hasNewAchievement) {
+            setGameState(prev => ({ ...prev, achievements: newAchievements }));
+          }
+        }, [gameState?.coins, gameState?.comboMultiplier]);
+
+        // Loading screen
+        if (loading) {
+          return React.createElement("div", { 
+            className: "min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black flex items-center justify-center" 
+          }, React.createElement("div", { className: "text-center" }, 
+            React.createElement("div", { className: "animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-500 mx-auto mb-4" }), 
+            React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Loading Fluent Network...")
+          ));
+        }
+
+        // Рендер різних екранів
+        const renderGameScreen = () => React.createElement("div", { className: "min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black relative overflow-hidden" },
+          // Анімований фон
+          React.createElement("div", { className: "absolute inset-0 opacity-20" },
+            React.createElement("div", { className: "absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-pink-500/10 animate-pulse" }),
+            React.createElement("div", { className: "absolute top-1/4 left-1/4 w-32 h-32 bg-cyan-400/20 rounded-full blur-xl animate-bounce" }),
+            React.createElement("div", { className: "absolute top-3/4 right-1/4 w-24 h-24 bg-purple-400/20 rounded-full blur-xl animate-pulse" })
+          ),
+          
+          // Уведомлення
+          React.createElement("div", { className: "fixed top-4 right-4 z-30 space-y-2" }, 
+            notifications.map((notification) => React.createElement("div", { 
+              key: notification.id, 
+              className: `px-6 py-3 rounded-xl shadow-2xl backdrop-blur-xl border transform transition-all duration-500 animate-bounce-in
+                ${notification.type === "success" ? "bg-green-900/60 border-green-500/50 text-green-400 shadow-green-500/25" : 
+                  notification.type === "achievement" ? "bg-yellow-900/60 border-yellow-500/50 text-yellow-400 shadow-yellow-500/25" : 
+                  "bg-blue-900/60 border-blue-500/50 text-blue-400 shadow-blue-500/25"}`
+            }, notification.message))
+          ),
+          
+          // Основний контент
+          React.createElement("div", { className: "relative z-10 p-6" },
+            React.createElement("div", { className: "text-center mb-8" },
+              React.createElement("div", { className: "flex items-center justify-center mb-4" },
+                React.createElement("div", { className: "text-4xl mr-3 animate-bounce" }, "⚡"),
+                React.createElement("h1", { className: "text-5xl font-black text-white tracking-wider" },
+                  React.createElement("span", { className: "bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse" }, "FLUENT MINING")
+                ),
+                React.createElement("div", { className: "text-4xl ml-3 animate-bounce" }, "⚡")
+              ),
+              React.createElement("div", { className: "w-48 h-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 mx-auto rounded-full shadow-lg shadow-cyan-500/50 animate-pulse" })
+            ),
+            
+            // Статистика
+            React.createElement("div", { className: "grid grid-cols-2 gap-4 mb-8 max-w-md mx-auto" },
+              React.createElement("div", { className: "bg-gradient-to-br from-cyan-900/50 to-blue-900/50 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-6 shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300 hover:scale-105" },
+                React.createElement("div", { className: "flex items-center mb-2" },
+                  React.createElement("div", { className: "text-2xl mr-2" }, "💰"),
+                  React.createElement("div", { className: "text-cyan-400 text-sm font-bold tracking-wide" }, "BALANCE")
+                ),
+                React.createElement("div", { className: "text-white text-2xl font-black" }, gameState.coins.toLocaleString()),
+                React.createElement("div", { className: "text-cyan-300 text-xs font-medium" }, "FLUENT COINS")
+              ),
+              React.createElement("div", { className: "bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur-xl border border-purple-500/30 rounded-2xl p-6 shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 transition-all duration-300 hover:scale-105" },
+                React.createElement("div", { className: "flex items-center mb-2" },
+                  React.createElement("div", { className: "text-2xl mr-2" }, "⚡"),
+                  React.createElement("div", { className: "text-purple-400 text-sm font-bold tracking-wide" }, "ENERGY")
+                ),
+                React.createElement("div", { className: "text-white text-2xl font-black" }, `${gameState.energy}/${gameState.maxEnergy}`),
+                React.createElement("div", { className: "w-full bg-gray-700 rounded-full h-2 mt-2" },
+                  React.createElement("div", {
+                    className: "bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300",
+                    style: { width: `${(gameState.energy / gameState.maxEnergy) * 100}%` }
+                  })
+                )
+              )
+            ),
+            
+            // Комбо індикатор
+            gameState.comboMultiplier > 1 && React.createElement("div", { className: "text-center mb-4 animate-bounce" },
+              React.createElement("div", { className: "inline-block bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-2 rounded-full font-bold text-lg shadow-lg" },
+                `COMBO x${gameState.comboMultiplier.toFixed(1)}`)
+            ),
+            
+            // Інформація про рівень
+            React.createElement("div", { className: "bg-gradient-to-br from-green-900/50 to-emerald-900/50 backdrop-blur-xl border border-green-500/30 rounded-2xl p-6 mb-8 max-w-md mx-auto shadow-xl shadow-green-500/20" },
+              React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                React.createElement("div", { className: "flex items-center" },
+                  React.createElement("div", { className: "text-2xl mr-2" }, "⭐"),
+                  React.createElement("span", { className: "text-green-400 text-lg font-bold" }, `LEVEL ${gameState.level}`)
+                ),
+                React.createElement("span", { className: "text-gray-300 text-sm font-medium" }, `${gameState.experience}/${expForNextLevel} XP`)
+              ),
+              React.createElement("div", { className: "w-full bg-gray-700 rounded-full h-3 shadow-inner" },
+                React.createElement("div", {
+                  className: "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-500 shadow-lg",
+                  style: { width: `${expProgress}%` }
+                })
+              ),
+              React.createElement("div", { className: "text-center mt-2" },
+                React.createElement("div", { className: "text-green-300 text-xs" }, `${expProgress.toFixed(1)}% TO NEXT LEVEL`)
+              )
+            ),
+            
+            // Кнопка тапання
+            React.createElement("div", { className: "flex flex-col items-center mb-8" },
+              React.createElement("div", { className: "relative mb-6" },
+                // Ефекти навколо кнопки
+                shockwave && React.createElement("div", { className: "absolute inset-0 rounded-full border-4 border-cyan-400 animate-ping opacity-50" }),
+                React.createElement("div", { className: "absolute inset-0 rounded-full bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse" }),
+                
+                React.createElement("button", {
+                  ref: tapButtonRef,
+                  onClick: handleTap,
+                  disabled: gameState.energy <= 0,
+                  className: `relative w-64 h-64 rounded-full bg-gradient-to-br from-cyan-500 via-purple-500 to-pink-500 p-2
+                    shadow-2xl transform transition-all duration-300 hover:scale-110 active:scale-95
+                    ${gameState.energy <= 0 ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:shadow-cyan-500/50 hover:shadow-purple-500/50"}
+                    ${tapEffect ? "scale-120" : ""}`
+                },
+                  React.createElement("div", { className: "w-full h-full rounded-full bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center relative overflow-hidden border border-gray-700" },
+                    React.createElement("div", { className: "text-6xl mb-2 animate-bounce" }, "⛏️"),
+                    React.createElement("div", { className: "text-2xl font-black text-white tracking-wider" }, "MINE"),
+                    React.createElement("div", { className: "text-sm text-gray-400 mt-1" }, "TAP TO EARN")
+                  )
+                )
+              ),
+              
+              // Індикатор сили тапання
+              React.createElement("div", { className: "text-center mb-4" },
+                React.createElement("div", { className: "text-white text-lg font-bold mb-1" }, "Mining Power"),
+                React.createElement("div", { className: "text-3xl font-black text-cyan-400" }, gameState.tapPower)
+              )
+            ),
+            
+            // Пасивний дохід індикатор
+            gameState.passiveIncome > 0 && React.createElement("div", { className: "bg-gradient-to-br from-green-900/50 to-emerald-900/50 backdrop-blur-xl border border-green-500/30 rounded-2xl p-4 mb-4 max-w-md mx-auto shadow-xl shadow-green-500/20" },
+              React.createElement("div", { className: "flex items-center justify-center" },
+                React.createElement("div", { className: "text-2xl mr-3 animate-pulse" }, "🏭"),
+                React.createElement("div", { className: "text-center" },
+                  React.createElement("div", { className: "text-green-400 text-sm font-bold mb-1" }, "PASSIVE INCOME"),
+                  React.createElement("div", { className: "text-white text-xl font-black" }, `${gameState.passiveIncome}/s`)
+                )
+              )
+            )
+          )
+        );
+
+        const renderShop = () => React.createElement("div", { className: "min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6" },
+          React.createElement("div", { className: "max-w-6xl mx-auto" },
+            React.createElement("div", { className: "text-center mb-8" },
+              React.createElement("h2", { className: "text-3xl font-bold text-white mb-2 tracking-wider" },
+                React.createElement("span", { className: "bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent" }, "UPGRADE STORE")
+              ),
+              React.createElement("div", { className: "w-32 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 mx-auto" })
+            ),
+            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+              Object.entries(upgradeData).map(([key, data]) => {
+                const cost = getUpgradeCost(key);
+                const currentLevel = gameState?.upgrades?.[key] || 0;
+                const canAfford = gameState?.coins >= cost;
+                return React.createElement("div", { key, className: "bg-gray-800/50 backdrop-blur-xl border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all duration-300 group hover:scale-105 transform" },
+                  React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                    React.createElement("div", null,
+                      React.createElement("h3", { className: "text-white font-bold text-lg" }, data.name),
+                      React.createElement("div", { className: "text-cyan-400 text-xs font-medium" }, data.category)
+                    ),
+                    React.createElement("div", { className: "text-right" },
+                      React.createElement("div", { className: "text-white text-sm flex items-center" }, "Level ", currentLevel)
+                    )
+                  ),
+                  React.createElement("p", { className: "text-gray-300 text-sm mb-4 leading-relaxed" }, data.description),
+                  React.createElement("button", {
+                    onClick: () => buyUpgrade(key),
+                    disabled: !canAfford,
+                    className: `w-full py-3 rounded-lg font-bold transition-all duration-200 transform hover:scale-105 flex items-center justify-center
+                      ${canAfford ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 border border-green-500/50 shadow-lg shadow-green-500/25" : "bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-600"}`
+                  },
+                    canAfford ? "UPGRADE" : "INSUFFICIENT FUNDS",
+                    " - ",
+                    cost.toLocaleString(),
+                    " FLUENT"
+                  )
+                );
+              })
+            )
+          )
+        );
+
+        const renderMissions = () => React.createElement("div", { className: "min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6" },
+          React.createElement("div", { className: "max-w-4xl mx-auto" },
+            React.createElement("div", { className: "text-center mb-8" },
+              React.createElement("h2", { className: "text-3xl font-bold text-white mb-2 tracking-wider" },
+                React.createElement("span", { className: "bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent" }, "MISSIONS")
+              ),
+              React.createElement("div", { className: "w-32 h-1 bg-gradient-to-r from-green-500 to-emerald-500 mx-auto" })
+            ),
+            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+              missionData.map((mission) => {
+                const isCompleted = gameState?.completedMissions?.includes(mission.id) || false;
+                const progress = getMissionProgress(mission);
+                const canClaim = progress >= mission.requirement.amount && !isCompleted;
+                
+                return React.createElement("div", { key: mission.id, className: `bg-gray-800/50 backdrop-blur-xl border rounded-xl p-6 transition-all duration-300 group hover:scale-105 transform ${isCompleted ? "border-green-500/50" : "border-gray-700 hover:border-green-500/50"}` },
+                  React.createElement("div", { className: "flex items-center justify-between mb-4" },
+                    React.createElement("div", null,
+                      React.createElement("h3", { className: "text-white font-bold text-lg" }, mission.title),
+                      React.createElement("div", { className: "text-gray-400 text-sm" }, mission.description)
+                    ),
+                    React.createElement("div", { className: "text-right" },
+                      React.createElement("div", { className: `text-sm ${isCompleted ? "text-green-400" : "text-gray-400"}` }, isCompleted ? "COMPLETED" : `${progress}/${mission.requirement.amount}`)
+                    )
+                  ),
+                  React.createElement("div", { className: "w-full bg-gray-700 rounded-full h-2 mb-4" },
+                    React.createElement("div", {
+                      className: "bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300",
+                      style: { width: `${Math.min((progress / mission.requirement.amount) * 100, 100)}%` }
+                    })
+                  ),
+                  React.createElement("div", { className: "flex items-center justify-between" },
+                    React.createElement("div", { className: "text-green-400 text-sm" },
+                      "Reward: ", mission.reward.coins, " FLUENT + ", mission.reward.experience, " XP"
+                    ),
+                    canClaim && React.createElement("button", {
+                      onClick: () => claimMission(mission.id),
+                      className: "bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:from-green-700 hover:to-emerald-700 transition-all duration-200"
+                    }, "CLAIM")
+                  )
+                );
+              })
+            )
+          )
+        );
+
+        const renderAchievements = () => React.createElement("div", { className: "min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black p-6" },
+          React.createElement("div", { className: "max-w-4xl mx-auto" },
+            React.createElement("div", { className: "text-center mb-8" },
+              React.createElement("h2", { className: "text-3xl font-bold text-white mb-2 tracking-wider" },
+                React.createElement("span", { className: "bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent" }, "ACHIEVEMENTS")
+              ),
+              React.createElement("div", { className: "w-32 h-1 bg-gradient-to-r from-yellow-500 to-orange-500 mx-auto" })
+            ),
+            React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-6" },
+              Object.entries(achievementData).map(([key, achievement]) => {
+                const isUnlocked = gameState?.achievements?.[key] || false;
+                
+                return React.createElement("div", { key, className: `bg-gray-800/50 backdrop-blur-xl border rounded-xl p-6 transition-all duration-300 group hover:scale-105 transform ${isUnlocked ? "border-yellow-500/50" : "border-gray-700"}` },
+                  React.createElement("div", { className: "flex items-center space-x-4" },
+                    React.createElement("div", { className: `text-4xl ${isUnlocked ? "text-yellow-400" : "text-gray-600"}` }, achievement.icon),
+                    React.createElement("div", { className: "flex-1" },
+                      React.createElement("h3", { className: `font-bold text-lg ${isUnlocked ? "text-white" : "text-gray-500"}` }, achievement.name),
+                      React.createElement("div", { className: `text-sm ${isUnlocked ? "text-gray-300" : "text-gray-600"}` }, achievement.description)
+                    ),
+                    React.createElement("div", { className: "text-right" },
+                      React.createElement("div", { className: `text-sm font-bold ${isUnlocked ? "text-yellow-400" : "text-gray-600"}` }, isUnlocked ? "UNLOCKED" : "LOCKED")
+                    )
+                  )
+                );
+              })
+            )
+          )
+        );
+
+        // Основний інтерфейс гри
+        return React.createElement("div", { className: "min-h-screen bg-black" },
+          // Нижня навігація
+          React.createElement("div", { className: "fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-xl border-t border-gray-800 z-50 shadow-2xl" },
+            React.createElement("div", { className: "flex justify-around items-center p-4" },
+              [
+                { key: "game", label: "MINE", icon: "⛏️" },
+                { key: "shop", label: "STORE", icon: "🛒" },
+                { key: "missions", label: "MISSIONS", icon: "📋" },
+                { key: "achievements", label: "ACHIEVEMENTS", icon: "🏆" }
+              ].map((tab) => React.createElement("button", {
+                key: tab.key,
+                onClick: () => setCurrentTab(tab.key),
+                className: `flex flex-col items-center p-3 rounded-xl transition-all duration-300 font-medium group relative
+                  ${currentTab === tab.key ? 
+                    "bg-gradient-to-t from-cyan-500/30 to-purple-500/30 text-cyan-400 border border-cyan-500/50 shadow-lg shadow-cyan-500/25 transform scale-105" : 
+                    "text-gray-400 hover:text-white hover:bg-gray-800/50 hover:scale-105"}`
+              },
+                React.createElement("div", { className: "text-2xl mb-1" }, tab.icon),
+                React.createElement("div", { className: "text-xs tracking-wide font-bold" }, tab.label),
+                currentTab === tab.key && React.createElement("div", { 
+                  className: "absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-cyan-400 rounded-full animate-pulse" 
+                })
+              ))
+            )
+          ),
+          
+          // Контент
+          React.createElement("div", { className: "pb-20" },
+            currentTab === "game" && renderGameScreen(),
+            currentTab === "shop" && renderShop(),
+            currentTab === "missions" && renderMissions(),
+            currentTab === "achievements" && renderAchievements()
+          )
+        );
+      };
+
+      // Запуск додатку
+      const rootElement = document.getElementById('root');
+      const root = createRoot(rootElement);
+      root.render(React.createElement(FluentCryptoTapper));
+    </script>
+  </body>
+</html>

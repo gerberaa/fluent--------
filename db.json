@@ -1,0 +1,37 @@
+{
+  "users": {
+    "default": {
+      "id": "default",
+      "name": "Player",
+      "coins": 9999,
+      "energy": 500,
+      "maxEnergy": 1950,
+      "level": 27,
+      "experience": 2275,
+      "tapPower": 224,
+      "passiveIncome": 54,
+      "lastOfflineTime": 0,
+      "upgrades": {
+        "quantumFinger": 103,
+        "energyCore": 37,
+        "miningRig": 27,
+        "fluentBooster": 20
+      },
+      "achievements": {
+        "firstTap": true,
+        "hundred": false,
+        "thousand": false,
+        "firstUpgrade": true,
+        "energyMaster": false,
+        "passive": false,
+        "storyComplete": false,
+        "comboMaster": false,
+        "speedTapper": false
+      },
+      "storyChapter": 0,
+      "dailyRewardDay": 0,
+      "lastDailyReward": 0,
+      "comboMultiplier": 5
+    }
+  }
+}

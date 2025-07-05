@@ -1,0 +1,29 @@
+{
+  "fluent-last-offline": 1751582431712,
+  "fluent-energy": 104,
+  "fluent-coins": 250,
+  "fluent-experience": 275,
+  "fluent-achievements": {
+    "firstTap": true,
+    "hundred": false,
+    "thousand": false,
+    "firstUpgrade": true,
+    "energyMaster": false,
+    "passive": false,
+    "storyComplete": false,
+    "comboMaster": true
+  },
+  "fluent-daily-day": 1,
+  "fluent-last-daily": 1751582006181,
+  "fluent-upgrades": {
+    "quantumFinger": 4,
+    "energyCore": 2,
+    "miningRig": 1,
+    "fluentBooster": 0
+  },
+  "fluent-tap-power": 5,
+  "fluent-level": 13,
+  "fluent-max-energy": 200,
+  "fluent-passive-income": 2,
+  "fluent-combo": 1
+}
