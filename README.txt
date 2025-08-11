@@ -1,25 +1,25 @@
-# React Component Export
+# Fluent Component Overview
 
-This ZIP file contains the exported React component from your Hatch canvas.
+This repository houses a **self‑contained React component** exported from the Hatch canvas. All assets are ready to drop into an existing project or preview in the browser with no build step required.
 
-## Files:
-- component.jsx: The main React component source code
-- component.js: The compiled/executable JavaScript version
-- index.html: Ready-to-run HTML file with fallback inline code and data
-- storedState.json: Initial state data
+### Files
+- `component.jsx` – human‑readable source of the component
+- `component.js` – compiled script ready for production use
+- `index.html` – standalone demo page showcasing the component
+- `storedState.json` – initial data used by Hatch's persistent state hook
 
+### Quick Preview
+Open the project in your browser in two different ways:
 
-## Quick Start:
-1. **Immediate Preview**:
-   - **File mode**: Double-click `index.html` - works locally with file:// URLs!
-   - **Server mode**: Serve from a local web server for cleaner file separation:
-     - `python -m http.server 8000`
-     - `npx serve .`
-     - `php -S localhost:8000`
+1. **File mode** – double‑click `index.html` and run it directly from your disk.
+2. **Server mode** – serve the folder from a local web server for cleaner file separation:
+   ```bash
+   python -m http.server 8000
+   # or
+   npx serve .
+   ```
 
-2. **Development Setup**:
-
-## Usage:
+### Usage in React
 ```jsx
 import Component from './component';
 
@@ -28,13 +28,14 @@ function App() {
 }
 ```
 
-## Hatch Runtime Features:
-The exported component includes support for Hatch's `useStoredState` hook:
-- `useStoredState(key, defaultValue)` - Persistent state storage using localStorage
-- Loads external files when served from a web server
-- Falls back to inline data for file:// URLs
-- State persists across browser sessions
+### Hatch Runtime Features
+The component leverages Hatch's `useStoredState` hook to persist data:
+- `useStoredState(key, defaultValue)` keeps values across sessions
+- Works with both `file://` URLs and served environments
+- Automatically falls back to inline data when network access isn't available
 
-The `index.html` file provides a complete Hatch-compatible runtime environment that works both when served from a web server (using external files) and when opened directly as file:// URLs (using inline fallbacks).
+The accompanying `index.html` supplies a complete runtime so the component works out of the box in any of these scenarios.
+
+---
 
 Generated on: 04.07.2025, 01:41:18
